@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ms&K Light</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <img src="images/logo.png" alt="Ms&K Light Logo" class="logo">
+        <nav>
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Products</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="content">
+            <!-- Advertisements and featured content -->
+        </div>
+        <button id="addProjectBtn" class="floating-btn">+</button>
+    </main>
+
+    <div id="addProjectModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add New Project</h2>
+            <form id="addProjectForm">
+                <label for="projectType">Select Project Type:</label>
+                <select id="projectType" name="projectType">
+                    <option value="ebook">Ebook</option>
+                    <option value="picture">Picture</option>
+                    <option value="video">Video</option>
+                    <option value="tool">Software Tool</option>
+                    <option value="app">Application</option>
+                    <option value="poem">Poem</option>
+                    <option value="quote">Quote</option>
+                </select>
+                <button type="submit">Add</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
