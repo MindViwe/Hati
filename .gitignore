@@ -1,0 +1,12 @@
+
+# Ignore compiled binaries
+Mind'sEye/bin/*
+!Mind'sEye/bin/llama-cli
+
+# Ignore build directories
+Mind'sEye/engines/whisper.cpp/build/
+Mind'sEye/engines/llama.cpp/build/
+
+# Ignore model files (they are large)
+*.gguf
+models/
