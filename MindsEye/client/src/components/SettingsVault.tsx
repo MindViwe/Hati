@@ -1,20 +1,48 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Shield, User, Github, Globe, Cpu, Lock, Eye, EyeOff, Check,
-  Server, Terminal, Brain, Mic, Download, FileUp, RefreshCw, X, Plus
+  Shield, 
+  User, 
+  Github, 
+  Globe, 
+  Cpu, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  Check,
+  Server,
+  Terminal,
+  Brain,
+  Mic,
+  Download,
+  FileUp,
+  RefreshCw,
+  X,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { 
-  getOllamaConfig, saveOllamaConfig, getWhisperConfig, saveWhisperConfig,
-  getLlamaCPPConfig, saveLlamaCPPConfig, downloadModel,
-  type OllamaConfig, type WhisperConfig, type LlamaCPPConfig
+  getOllamaConfig, 
+  saveOllamaConfig, 
+  getWhisperConfig, 
+  saveWhisperConfig,
+  getLlamaCPPConfig,
+  saveLlamaCPPConfig,
+  downloadModel,
+  type OllamaConfig,
+  type WhisperConfig,
+  type LlamaCPPConfig
 } from "@/lib/localAIService";
 import { Badge } from "@/components/ui/badge";
 
@@ -201,9 +229,8 @@ function LocalAIConfig() {
   const [whisperConfig, setWhisperConfig] = useState<WhisperConfig>(getWhisperConfig());
   const [llamaCPPConfig, setLlamaCPPConfig] = useState<LlamaCPPConfig>(getLlamaCPPConfig());
   const [isDownloading, setIsDownloading] = useState(false);
-  
-  // Consolidated state
-  const [newGeneralModel, setNewGeneralModel] = useState("");
+  const [newScottModel, setNewScottModel] = useState("");
+  const [newHatiModel, setNewHatiModel] = useState("");
 
   const handleOllamaSave = () => saveOllamaConfig(ollamaConfig);
   const handleWhisperSave = () => saveWhisperConfig(whisperConfig);
@@ -215,23 +242,31 @@ function LocalAIConfig() {
     setIsDownloading(false);
   };
 
-  const addModel = () => {
-    if (!newGeneralModel.trim()) return;
-    const key = llamaCPPConfig.activeCategory === "scott" ? "scottModels" : "hatiModels";
+  const addModel = (category: "scott" | "hati") => {
+    const modelName = category === "scott" ? newScottModel : newHatiModel;
+    if (!modelName.trim()) return;
+    
+    const key = category === "scott" ? "scottModels" : "hatiModels";
     const newConfig = {
       ...llamaCPPConfig,
-      [key]: [...llamaCPPConfig[key], newGeneralModel.trim()]
+      [key]: [...llamaCPPConfig[key], modelName.trim()]
     };
     setLlamaCPPConfig(newConfig);
     saveLlamaCPPConfig(newConfig);
-    setNewGeneralModel("");
+    
+    if (category === "scott") setNewScottModel("");
+    else setNewHatiModel("");
   };
 
   const removeModel = (category: "scott" | "hati", index: number) => {
     const key = category === "scott" ? "scottModels" : "hatiModels";
     const newModels = [...llamaCPPConfig[key]];
     newModels.splice(index, 1);
-    const newConfig = { ...llamaCPPConfig, [key]: newModels };
+    
+    const newConfig = {
+      ...llamaCPPConfig,
+      [key]: newModels
+    };
     setLlamaCPPConfig(newConfig);
     saveLlamaCPPConfig(newConfig);
   };
@@ -240,11 +275,221 @@ function LocalAIConfig() {
     <div className="space-y-4">
       {/* Llama.cpp Configuration */}
       <div className="p-4 rounded-lg border border-white/5 bg-black/20 hover:bg-white/5 transition-colors">
-        {/* ... rest of your JSX ... */}
-        {/* Replace Scott/Hati inputs with newGeneralModel */}
-      </div>
-    </div>
-  );
-}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-md ${llamaCPPConfig.enabled ? 'bg-orange-500/20 text-orange-400' : 'bg-white/5 text-muted-foreground'}`}>
+              <Terminal className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-display font-bold text-sm tracking-wide">Llama.cpp Engine</h4>
+              <p className="text-xs text-muted-foreground font-sans">Multi-Neural Stacking Enabled</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleDownload("Llama.cpp", "Scott/Hati Bundle")}>
+              <Download className="w-4 h-4" />
+            </Button>
+            <Switch 
+              checked={llamaCPPConfig.enabled}
+              onCheckedChange={(checked) => {
+                const newConfig = { ...llamaCPPConfig, enabled: checked };
+                setLlamaCPPConfig(newConfig);
+                saveLlamaCPPConfig(newConfig);
+              }}
+            />
+          </div>
+        </div>
 
-export { GithubAuthRow, ApiKeyRow, LocalAIConfig };
+        <AnimatePresence>
+          {llamaCPPConfig.enabled && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="space-y-4 overflow-hidden"
+            >
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase text-muted-foreground">Server URL</Label>
+                <Input 
+                  value={llamaCPPConfig.baseUrl}
+                  onChange={(e) => setLlamaCPPConfig({ ...llamaCPPConfig, baseUrl: e.target.value })}
+                  onBlur={handleLlamaCPPSave}
+                  className="bg-black/40 border-white/10 font-mono text-xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 p-1 bg-black/40 rounded-md border border-white/5">
+                <Button 
+                  variant={llamaCPPConfig.activeCategory === "scott" ? "default" : "ghost"}
+                  size="sm"
+                  className="flex-1 text-[10px] h-7 font-display tracking-widest"
+                  onClick={() => {
+                    const newConfig = { ...llamaCPPConfig, activeCategory: "scott" as const };
+                    setLlamaCPPConfig(newConfig);
+                    saveLlamaCPPConfig(newConfig);
+                  }}
+                >
+                  SCOTT STACK
+                </Button>
+                <Button 
+                  variant={llamaCPPConfig.activeCategory === "hati" ? "default" : "ghost"}
+                  size="sm"
+                  className="flex-1 text-[10px] h-7 font-display tracking-widest"
+                  onClick={() => {
+                    const newConfig = { ...llamaCPPConfig, activeCategory: "hati" as const };
+                    setLlamaCPPConfig(newConfig);
+                    saveLlamaCPPConfig(newConfig);
+                  }}
+                >
+                  HATI STACK
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Scott Models */}
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase text-muted-foreground flex items-center justify-between">
+                    Scott Stack
+                    <Badge variant="outline" className="text-[8px] h-4">{llamaCPPConfig.scottModels.length} Models</Badge>
+                  </Label>
+                  <div className="space-y-1">
+                    {llamaCPPConfig.scottModels.map((m, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-black/40 p-1.5 rounded border border-white/5 group">
+                        <span className="flex-1 font-mono text-[10px] truncate">{m}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-4 w-4 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeModel("scott", i)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input 
+                        placeholder="Add model..." 
+                        value={newScottModel}
+                        onChange={(e) => setNewScottModel(e.target.value)}
+                        className="h-7 text-[10px] bg-black/60 border-white/5"
+                        onKeyDown={(e) => e.key === "Enter" && addModel("scott")}
+                      />
+                      <Button size="icon" className="h-7 w-7 shrink-0" onClick={() => addModel("scott")}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hati Models */}
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase text-muted-foreground flex items-center justify-between">
+                    Hati Stack
+                    <Badge variant="outline" className="text-[8px] h-4">{llamaCPPConfig.hatiModels.length} Models</Badge>
+                  </Label>
+                  <div className="space-y-1">
+                    {llamaCPPConfig.hatiModels.map((m, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-black/40 p-1.5 rounded border border-white/5 group">
+                        <span className="flex-1 font-mono text-[10px] truncate">{m}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-4 w-4 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeModel("hati", i)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input 
+                        placeholder="Add model..." 
+                        value={newHatiModel}
+                        onChange={(e) => setNewHatiModel(e.target.value)}
+                        className="h-7 text-[10px] bg-black/60 border-white/5"
+                        onKeyDown={(e) => e.key === "Enter" && addModel("hati")}
+                      />
+                      <Button size="icon" className="h-7 w-7 shrink-0" onClick={() => addModel("hati")}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Local Llama 3 Configuration */}
+      <div className="p-4 rounded-lg border border-white/5 bg-black/20 hover:bg-white/5 transition-colors">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-md ${ollamaConfig.enabled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-muted-foreground'}`}>
+              <Brain className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-display font-bold text-sm tracking-wide">Local Llama 3 (Ollama)</h4>
+              <p className="text-xs text-muted-foreground font-sans">Connect to local Ollama instance.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleDownload("Ollama", ollamaConfig.model)}>
+              <Download className="w-4 h-4" />
+            </Button>
+            <Switch 
+              checked={ollamaConfig.enabled}
+              onCheckedChange={(checked) => {
+                const newConfig = { ...ollamaConfig, enabled: checked };
+                setOllamaConfig(newConfig);
+                saveOllamaConfig(newConfig);
+              }}
+            />
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {ollamaConfig.enabled && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="space-y-3 overflow-hidden"
+            >
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase text-muted-foreground">Ollama URL</Label>
+                <Input 
+                  value={ollamaConfig.baseUrl}
+                  onChange={(e) => setOllamaConfig({ ...ollamaConfig, baseUrl: e.target.value })}
+                  onBlur={handleOllamaSave}
+                  className="bg-black/40 border-white/10 font-mono text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase text-muted-foreground">Model Name</Label>
+                <Input 
+                  value={ollamaConfig.model}
+                  onChange={(e) => setOllamaConfig({ ...ollamaConfig, model: e.target.value })}
+                  onBlur={handleOllamaSave}
+                  className="bg-black/40 border-white/10 font-mono text-xs"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Local Whisper Configuration */}
+      <div className="p-4 rounded-lg border border-white/5 bg-black/20 hover:bg-white/5 transition-colors">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-md ${whisperConfig.enabled ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-muted-foreground'}`}>
+              <Mic className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-display font-bold text-sm tracking-wide">Local Whisper.cpp</h4>
+              <p className="text-xs text-muted-foreground font-sans">Connect to whisper.cpp server.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => 
