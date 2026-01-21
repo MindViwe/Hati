@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Determine the operation based on arguments
+case "$1" in
+  "chat")
+    shift
+    exec "$SCRIPT_DIR/llama-simple-chat" "$@"
+    ;;
+  "quantize")
+    shift
+    exec "$SCRIPT_DIR/llama-quantize" "$@"
+    ;;
+  "tokenize")
+    shift
+    exec "$SCRIPT_DIR/llama-tokenize" "$@"
+    ;;
+  *)
+    # Default to simple text generation
+    exec "$SCRIPT_DIR/llama-simple" "$@"
+    ;;
+esac
