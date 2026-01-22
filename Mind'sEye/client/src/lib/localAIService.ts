@@ -15,14 +15,15 @@ export interface WhisperConfig {
   enabled: boolean;
 }
 
+// Updated to use your server IP
 export const DEFAULT_OLLAMA_CONFIG: OllamaConfig = {
-  baseUrl: "http://localhost:11434",
-  model: "llama3",
+  baseUrl: "http://100.125.32.98:5000",
+  model: "qwen2.5-1.5b-instruct-q4_k_m.gguf",
   enabled: false,
 };
 
 export const DEFAULT_WHISPER_CONFIG: WhisperConfig = {
-  serverUrl: "http://localhost:8080", // Default for whisper.cpp server
+  serverUrl: "http://100.125.32.98:5000",
   enabled: false,
 };
 
@@ -54,51 +55,54 @@ export function saveWhisperConfig(config: WhisperConfig) {
 
 export async function generateLocalLlamaResponse(prompt: string): Promise<string> {
   const config = getOllamaConfig();
-  
+
   if (!config.enabled) {
-    throw new Error("Local Llama3 is not enabled");
+    throw new Error("Local Llama is not enabled");
   }
 
   try {
-    const response = await fetch(`${config.baseUrl}/api/generate`, {
+    const response = await fetch(`${config.baseUrl}/api/ai/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: config.model,
         prompt: prompt,
-        stream: false,
+        model: config.model,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama API Error: ${response.statusText}`);
+      throw new Error(`API Error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    return data.response;
+    const data = await response.text();
+    return data;
   } catch (error) {
-    console.error("Failed to connect to local Llama3:", error);
+    console.error("Failed to connect to local Llama:", error);
     throw error;
   }
 }
 
 export async function transcribeWithLocalWhisper(audioBlob: Blob): Promise<string> {
   const config = getWhisperConfig();
-  
+
   if (!config.enabled) {
     throw new Error("Local Whisper is not enabled");
   }
 
-  const formData = new FormData();
-  formData.append("file", audioBlob, "recording.wav");
-  formData.append("response_format", "json");
-
   try {
-    const response = await fetch(`${config.serverUrl}/inference`, {
+    // For now, we'll use a test file that we know exists
+    const filePath = "/data/data/com.termux/files/home/Hati/Mind'sEye/test_audio/speech_sample.wav";
+    
+    const response = await fetch(`${config.serverUrl}/api/ai/transcribe`, {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        audioPath: filePath,
+      }),
     });
 
     if (!response.ok) {
