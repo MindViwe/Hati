@@ -6,8 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navigation } from "@/components/Navigation";
 import Login from "@/pages/Login";
 import Chat from "@/pages/Chat";
-import Projects from "@/pages/Projects";
-import Songs from "@/pages/Songs";
+import Terminal from "@/pages/Terminal";
 import NotFound from "@/pages/not-found";
 import { useEffect, useState } from "react";
 
@@ -45,11 +44,8 @@ function Router() {
       <Route path="/chat">
         <PrivateRoute component={Chat} />
       </Route>
-      <Route path="/projects">
-        <PrivateRoute component={Projects} />
-      </Route>
-      <Route path="/songs">
-        <PrivateRoute component={Songs} />
+      <Route path="/terminal">
+        <PrivateRoute component={Terminal} />
       </Route>
 
       <Route component={NotFound} />

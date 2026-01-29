@@ -143,6 +143,63 @@ export async function registerRoutes(
     }
   });
 
+  // Terminal execute endpoint
+  app.post("/api/terminal/execute", async (req, res) => {
+    try {
+      const { command } = req.body;
+      if (!command) {
+        return res.status(400).json({ error: "Command is required" });
+      }
+
+      // Use AI to simulate terminal responses for safety
+      // In a real app, you'd use child_process.exec with proper sandboxing
+      const response = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a Linux terminal simulator. When given a command, respond with realistic terminal output.
+For commands like 'ls', 'pwd', 'echo', 'cat', 'help', etc., provide realistic outputs.
+For 'help', list available commands like: ls, pwd, echo, cat, date, whoami, uname, node -v, npm -v, python --version.
+Keep responses concise and terminal-like. No markdown, just plain text as a terminal would output.`
+          },
+          { role: "user", content: command }
+        ],
+        max_tokens: 500,
+      });
+
+      const output = response.choices[0]?.message?.content || "Command executed.";
+      res.json({ output });
+    } catch (error) {
+      console.error("Terminal error:", error);
+      res.status(500).json({ error: "Failed to execute command", output: "Error: Command execution failed." });
+    }
+  });
+
+  // File upload endpoint for analysis
+  app.post("/api/upload", async (req, res) => {
+    try {
+      // Handle base64 encoded file data
+      const { filename, content, mimeType } = req.body;
+      
+      if (!filename || !content) {
+        return res.status(400).json({ error: "Filename and content are required" });
+      }
+
+      // Return file info for AI analysis
+      res.json({
+        success: true,
+        filename,
+        mimeType: mimeType || "application/octet-stream",
+        size: Buffer.from(content, "base64").length,
+        message: `File "${filename}" uploaded successfully. Ready for analysis.`
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
   // Image generation endpoint
   app.post("/api/generate-image", async (req, res) => {
     try {

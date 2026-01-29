@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { MessageSquare, Music, FolderGit2, LogOut, Code2, Sparkles } from "lucide-react";
+import { MessageSquare, LogOut, Terminal, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Navigation() {
@@ -7,8 +7,7 @@ export function Navigation() {
 
   const navItems = [
     { href: "/chat", icon: MessageSquare, label: "Hati" },
-    { href: "/projects", icon: Code2, label: "Projects" },
-    { href: "/songs", icon: Music, label: "Songs" },
+    { href: "/terminal", icon: Terminal, label: "Terminal" },
   ];
 
   const handleLogout = () => {
