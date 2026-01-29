@@ -215,9 +215,9 @@ Keep responses concise and terminal-like. No markdown, just plain text as a term
         size: size as "1024x1024" | "512x512" | "256x256",
       });
 
-      const imageData = response.data[0];
+      const imageData = response.data?.[0];
       res.json({
-        b64_json: imageData.b64_json,
+        b64_json: imageData?.b64_json,
       });
     } catch (error) {
       console.error("Image generation error:", error);
