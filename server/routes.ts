@@ -5,7 +5,13 @@ import { api } from "@shared/routes";
 import { registerChatRoutes } from "./replit_integrations/chat";
 import { registerAudioRoutes } from "./replit_integrations/audio";
 import { registerImageRoutes } from "./replit_integrations/image";
+import OpenAI from "openai";
 import { z } from "zod";
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -91,6 +97,75 @@ export async function registerRoutes(
     const song = await storage.getSong(Number(req.params.id));
     if (!song) return res.status(404).json({ message: "Song not found" });
     res.json(song);
+  });
+
+  // Text-to-Speech endpoint for Hati to speak
+  app.post("/api/tts", async (req, res) => {
+    try {
+      const { text, voice = "nova" } = req.body;
+      if (!text) {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const stream = await openai.chat.completions.create({
+        model: "gpt-audio",
+        modalities: ["text", "audio"],
+        audio: { voice, format: "pcm16" },
+        messages: [
+          { role: "system", content: "You are an assistant that performs text-to-speech." },
+          { role: "user", content: `Repeat the following text verbatim: ${text}` },
+        ],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const delta = (chunk.choices?.[0]?.delta as any);
+        if (!delta) continue;
+        if (delta?.audio?.data) {
+          res.write(`data: ${JSON.stringify({ audio: delta.audio.data })}\n\n`);
+        }
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    } catch (error) {
+      console.error("TTS error:", error);
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ error: "TTS failed" })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: "TTS failed" });
+      }
+    }
+  });
+
+  // Image generation endpoint
+  app.post("/api/generate-image", async (req, res) => {
+    try {
+      const { prompt, size = "1024x1024" } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      const response = await openai.images.generate({
+        model: "gpt-image-1",
+        prompt,
+        n: 1,
+        size: size as "1024x1024" | "512x512" | "256x256",
+      });
+
+      const imageData = response.data[0];
+      res.json({
+        b64_json: imageData.b64_json,
+      });
+    } catch (error) {
+      console.error("Image generation error:", error);
+      res.status(500).json({ error: "Failed to generate image" });
+    }
   });
 
   return httpServer;
