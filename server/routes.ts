@@ -7,6 +7,10 @@ import { registerAudioRoutes } from "./replit_integrations/audio";
 import { registerImageRoutes } from "./replit_integrations/image";
 import OpenAI from "openai";
 import { z } from "zod";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -143,7 +147,7 @@ export async function registerRoutes(
     }
   });
 
-  // Terminal execute endpoint
+  // Terminal execute endpoint - real shell execution
   app.post("/api/terminal/execute", async (req, res) => {
     try {
       const { command } = req.body;
@@ -151,28 +155,55 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Command is required" });
       }
 
-      // Use AI to simulate terminal responses for safety
-      // In a real app, you'd use child_process.exec with proper sandboxing
-      const response = await openai.chat.completions.create({
-        model: "gpt-4.1-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are a Linux terminal simulator. When given a command, respond with realistic terminal output.
-For commands like 'ls', 'pwd', 'echo', 'cat', 'help', etc., provide realistic outputs.
-For 'help', list available commands like: ls, pwd, echo, cat, date, whoami, uname, node -v, npm -v, python --version.
-Keep responses concise and terminal-like. No markdown, just plain text as a terminal would output.`
-          },
-          { role: "user", content: command }
-        ],
-        max_tokens: 500,
+      // Handle built-in commands
+      if (command.trim() === "help") {
+        res.json({ 
+          output: `Hati Terminal - Available Commands:
+  ls, ll, la     - List directory contents
+  cd <dir>       - Change directory
+  pwd            - Print working directory
+  cat <file>     - Display file contents
+  echo <text>    - Print text
+  mkdir <dir>    - Create directory
+  rm <file>      - Remove file
+  cp <src> <dst> - Copy file
+  mv <src> <dst> - Move file
+  touch <file>   - Create empty file
+  grep <pattern> - Search in files
+  find <path>    - Find files
+  node, npm, npx - Node.js commands
+  python, pip    - Python commands
+  git            - Git commands
+  curl, wget     - HTTP requests
+  clear          - Clear terminal (use button)
+  
+Type any valid shell command to execute.` 
+        });
+        return;
+      }
+
+      // Execute real shell command with timeout
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 30000, // 30 second timeout
+        maxBuffer: 1024 * 1024, // 1MB buffer
+        cwd: process.cwd(),
+        env: { ...process.env, TERM: "xterm-256color" },
       });
 
-      const output = response.choices[0]?.message?.content || "Command executed.";
-      res.json({ output });
-    } catch (error) {
+      const output = stdout || stderr || "Command executed successfully.";
+      res.json({ output: output.trim(), error: stderr ? true : false });
+    } catch (error: any) {
       console.error("Terminal error:", error);
-      res.status(500).json({ error: "Failed to execute command", output: "Error: Command execution failed." });
+      
+      // Handle command errors (non-zero exit codes)
+      if (error.stdout || error.stderr) {
+        const output = error.stderr || error.stdout || error.message;
+        res.json({ output: output.trim(), error: true });
+      } else if (error.killed) {
+        res.json({ output: "Command timed out after 30 seconds.", error: true });
+      } else {
+        res.json({ output: error.message || "Command execution failed.", error: true });
+      }
     }
   });
 
