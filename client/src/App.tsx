@@ -3,10 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Navigation } from "@/components/Navigation";
 import Login from "@/pages/Login";
 import Chat from "@/pages/Chat";
-import Terminal from "@/pages/Terminal";
 import NotFound from "@/pages/not-found";
 import { useEffect, useState } from "react";
 
@@ -27,8 +25,7 @@ function PrivateRoute({ component: Component, ...rest }: any) {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
-      <Navigation />
-      <main className="flex-1 ml-20 lg:ml-64 p-4 lg:p-6 h-full overflow-hidden relative">
+      <main className="flex-1 p-4 lg:p-6 h-full overflow-hidden relative">
         <Component {...rest} />
       </main>
     </div>
@@ -43,9 +40,6 @@ function Router() {
       {/* Private Routes */}
       <Route path="/chat">
         <PrivateRoute component={Chat} />
-      </Route>
-      <Route path="/terminal">
-        <PrivateRoute component={Terminal} />
       </Route>
 
       <Route component={NotFound} />
