@@ -139,9 +139,24 @@ export default function Chat() {
     }
     
     const lowerInput = input.toLowerCase();
-    if (lowerInput.includes("generate image") || lowerInput.includes("create image") || lowerInput.includes("make image") || lowerInput.includes("draw")) {
+    const imageKeywords = [
+      "generate image", "create image", "make image", "draw", 
+      "generate a picture", "create a picture", "make a picture",
+      "generate an image", "create an image", "make an image",
+      "show me", "visualize", "illustrate", "paint",
+      "generate art", "create art", "make art"
+    ];
+    
+    const isImageRequest = imageKeywords.some(keyword => lowerInput.includes(keyword));
+    
+    if (isImageRequest) {
       let imagePrompt = input;
-      const triggers = ["generate image of", "create image of", "make image of", "draw"];
+      const triggers = [
+        "generate image of", "create image of", "make image of", 
+        "generate a picture of", "create a picture of", "make a picture of",
+        "generate an image of", "create an image of", "make an image of",
+        "show me", "visualize", "illustrate", "paint", "draw"
+      ];
       for (const trigger of triggers) {
         if (lowerInput.includes(trigger)) {
           const idx = lowerInput.indexOf(trigger);

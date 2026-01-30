@@ -7,10 +7,6 @@ import { registerAudioRoutes } from "./replit_integrations/audio";
 import { registerImageRoutes } from "./replit_integrations/image";
 import OpenAI from "openai";
 import { z } from "zod";
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -143,66 +139,6 @@ export async function registerRoutes(
         res.end();
       } else {
         res.status(500).json({ error: "TTS failed" });
-      }
-    }
-  });
-
-  // Terminal execute endpoint - real shell execution
-  app.post("/api/terminal/execute", async (req, res) => {
-    try {
-      const { command } = req.body;
-      if (!command) {
-        return res.status(400).json({ error: "Command is required" });
-      }
-
-      // Handle built-in commands
-      if (command.trim() === "help") {
-        res.json({ 
-          output: `Hati Terminal - Available Commands:
-  ls, ll, la     - List directory contents
-  cd <dir>       - Change directory
-  pwd            - Print working directory
-  cat <file>     - Display file contents
-  echo <text>    - Print text
-  mkdir <dir>    - Create directory
-  rm <file>      - Remove file
-  cp <src> <dst> - Copy file
-  mv <src> <dst> - Move file
-  touch <file>   - Create empty file
-  grep <pattern> - Search in files
-  find <path>    - Find files
-  node, npm, npx - Node.js commands
-  python, pip    - Python commands
-  git            - Git commands
-  curl, wget     - HTTP requests
-  clear          - Clear terminal (use button)
-  
-Type any valid shell command to execute.` 
-        });
-        return;
-      }
-
-      // Execute real shell command with timeout
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 30000, // 30 second timeout
-        maxBuffer: 1024 * 1024, // 1MB buffer
-        cwd: process.cwd(),
-        env: { ...process.env, TERM: "xterm-256color" },
-      });
-
-      const output = stdout || stderr || "Command executed successfully.";
-      res.json({ output: output.trim(), error: stderr ? true : false });
-    } catch (error: any) {
-      console.error("Terminal error:", error);
-      
-      // Handle command errors (non-zero exit codes)
-      if (error.stdout || error.stderr) {
-        const output = error.stderr || error.stdout || error.message;
-        res.json({ output: output.trim(), error: true });
-      } else if (error.killed) {
-        res.json({ output: "Command timed out after 30 seconds.", error: true });
-      } else {
-        res.json({ output: error.message || "Command execution failed.", error: true });
       }
     }
   });
