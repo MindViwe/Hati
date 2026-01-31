@@ -1,0 +1,6 @@
+{
+  "appId": "com.sihati.app",
+  "appName": "SI-Hati",
+  "webDir": "app/dist",
+  "bundledWebRuntime": false
+}

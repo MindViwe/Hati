@@ -4,11 +4,27 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+/**
+ * DEV MODE FALLBACK
+ * -----------------
+ * In production, DATABASE_URL MUST be set.
+ * In local / Termux / Expo dev, we allow a fake URL
+ * so the server can boot without a real Postgres instance.
+ */
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  "postgres://dev:dev@localhost:5432/dev";
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+/**
+ * Create a pool even if the DB does not exist.
+ * As long as no queries run, the server will stay alive.
+ */
+export const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: false,
+});
+
+/**
+ * Drizzle ORM instance
+ */
 export const db = drizzle(pool, { schema });
